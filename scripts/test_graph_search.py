@@ -3,8 +3,12 @@
 import sys
 from pathlib import Path
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add scripts directory to path to import script_utils
+sys.path.insert(0, str(Path(__file__).parent))
+from script_utils import setup_environment
+
+# Set up environment (loads .env, sets working directory)
+setup_environment()
 
 from src.pipeline import MultimodalRAGPipeline
 from src.models import Query

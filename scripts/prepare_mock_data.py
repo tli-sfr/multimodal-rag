@@ -12,8 +12,12 @@ Populates both Qdrant (vector store) and Neo4j (knowledge graph).
 import sys
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add scripts directory to path to import script_utils
+sys.path.insert(0, str(Path(__file__).parent))
+from script_utils import setup_environment, verify_api_key
+
+# Set up environment (loads .env, sets working directory)
+setup_environment()
 
 from uuid import uuid4
 from datetime import datetime
