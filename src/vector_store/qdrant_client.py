@@ -217,6 +217,8 @@ class QdrantVectorStore:
             return []
 
         try:
+            logger.debug(f"Attempting to retrieve {len(chunk_ids)} chunks by ID: {chunk_ids[:3]}...")
+
             # Retrieve points by IDs
             results = self.client.retrieve(
                 collection_name=self.collection_name,
@@ -225,18 +227,24 @@ class QdrantVectorStore:
                 with_vectors=False
             )
 
+            logger.debug(f"Qdrant returned {len(results)} results")
+
             # Convert to SearchResult objects
             search_results = []
             for result in results:
-                search_result = SearchResult(
-                    id=UUID(result.id),
-                    content=result.payload['content'],
-                    score=0.0,  # No similarity score for direct retrieval
-                    modality=ModalityType(result.payload['modality']),
-                    metadata=result.payload.get('metadata', {}),
-                    source='graph'
-                )
-                search_results.append(search_result)
+                try:
+                    search_result = SearchResult(
+                        id=UUID(result.id) if isinstance(result.id, str) else result.id,
+                        content=result.payload['content'],
+                        score=0.0,  # No similarity score for direct retrieval
+                        modality=ModalityType(result.payload['modality']),
+                        metadata=result.payload.get('metadata', {}),
+                        source='graph'
+                    )
+                    search_results.append(search_result)
+                except Exception as e:
+                    logger.warning(f"Failed to convert result {result.id}: {e}")
+                    continue
 
             logger.debug(f"Retrieved {len(search_results)} chunks by ID")
             return search_results

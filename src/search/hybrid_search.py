@@ -151,15 +151,27 @@ class HybridSearchEngine:
         """
         try:
             # Step 1: Extract potential entity names from query
-            # Simple approach: split query into words and use as entity names
-            # More sophisticated: use NER or entity extractor
-            query_words = query.text.split()
+            # Clean the query text: remove possessives, punctuation
+            import re
 
-            # Also try the full query as an entity name
-            potential_entities = [query.text] + query_words
+            # Remove possessive 's
+            cleaned_text = re.sub(r"'s\b", "", query.text)
 
-            # Filter out very short words (likely not entities)
-            potential_entities = [e for e in potential_entities if len(e) > 2]
+            # Split into words
+            query_words = cleaned_text.split()
+
+            # Also try the full cleaned query as an entity name
+            potential_entities = [cleaned_text] + query_words
+
+            # Filter out very short words and common stop words
+            stop_words = {'what', 'is', 'the', 'a', 'an', 'about', 'how', 'why', 'when', 'where',
+                         'who', 'which', 'their', 'his', 'her', 'its', 'our', 'your', 'my',
+                         'opinion', 'view', 'think', 'thought', 'idea', 'belief'}
+
+            potential_entities = [
+                e for e in potential_entities
+                if len(e) > 2 and e.lower() not in stop_words
+            ]
 
             if not potential_entities:
                 logger.debug("No potential entities found in query")
