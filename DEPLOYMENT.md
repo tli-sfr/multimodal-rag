@@ -8,6 +8,7 @@ This guide helps you deploy the system on a new machine after cloning from GitHu
 - Docker and Docker Compose
 - Git
 - OpenAI API key
+- FFmpeg (for audio/video processing)
 
 ## Quick Setup on New Machine
 
@@ -126,6 +127,38 @@ Expected output:
 ## Troubleshooting
 
 ### Installation Issues
+
+#### Error: "FFmpeg not found" when ingesting audio/video
+
+Audio and video processing requires FFmpeg to be installed on your system.
+
+**Solution for macOS:**
+
+```bash
+# Install using Homebrew
+brew install ffmpeg
+
+# Verify installation
+ffmpeg -version
+```
+
+**Solution for Ubuntu/Debian:**
+
+```bash
+# Install using apt
+sudo apt update
+sudo apt install ffmpeg
+
+# Verify installation
+ffmpeg -version
+```
+
+**Solution for Windows:**
+
+1. Download FFmpeg from: https://ffmpeg.org/download.html
+2. Extract to `C:\ffmpeg`
+3. Add `C:\ffmpeg\bin` to your PATH environment variable
+4. Restart your terminal and verify: `ffmpeg -version`
 
 #### Error: "RuntimeError: Numpy is not available"
 
