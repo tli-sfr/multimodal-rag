@@ -1,0 +1,306 @@
+"""Streamlit UI for Multimodal RAG System."""
+
+import sys
+from pathlib import Path
+
+# Add project root to path for absolute imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+import streamlit as st
+import tempfile
+import os
+
+from loguru import logger
+
+# Configure page
+st.set_page_config(
+    page_title="Multimodal Enterprise RAG",
+    page_icon="🔍",
+    layout="wide"
+)
+
+# Import pipeline (with caching)
+@st.cache_resource
+def get_pipeline():
+    """Get or create pipeline instance."""
+    try:
+        from src.pipeline import MultimodalRAGPipeline
+        return MultimodalRAGPipeline()
+    except Exception as e:
+        logger.error(f"Failed to initialize pipeline: {e}")
+        raise
+
+
+def main():
+    """Main Streamlit application."""
+    
+    st.title("🔍 Multimodal Enterprise RAG System")
+    st.markdown("---")
+    
+    # Sidebar for configuration
+    with st.sidebar:
+        st.header("⚙️ Configuration")
+
+        # Cache control
+        if st.button("🔄 Clear Cache & Reload Pipeline"):
+            st.cache_resource.clear()
+            st.success("Cache cleared! Pipeline will reload on next query.")
+            st.rerun()
+
+        st.markdown("---")
+
+        top_k = st.slider(
+            "Number of results",
+            min_value=1,
+            max_value=20,
+            value=10
+        )
+        
+        st.markdown("---")
+        st.header("📊 System Status")
+
+        try:
+            pipeline = get_pipeline()
+            st.success("✅ Pipeline initialized")
+        except Exception as e:
+            error_msg = str(e)
+            st.error(f"❌ Pipeline error: {error_msg}")
+
+            # Provide helpful error messages
+            if "Connection refused" in error_msg or "61" in error_msg:
+                st.warning("⚠️ **Docker services not running**")
+                st.info("""
+                **To fix this:**
+
+                1. Start Docker Desktop
+                2. Run in terminal:
+                   ```bash
+                   docker-compose up -d
+                   ```
+                3. Wait 10-20 seconds for services to start
+                4. Refresh this page
+
+                **Services needed:**
+                - Qdrant (vector database) - port 6333
+                - Neo4j (graph database) - port 7687
+                """)
+            elif "langchain" in error_msg.lower():
+                st.info("""
+                **Import error detected.**
+
+                Run in terminal:
+                ```bash
+                pip install -e .
+                ```
+                Then restart Streamlit.
+                """)
+
+            st.markdown("---")
+            st.markdown("**Note:** You can still view the UI, but functionality will be limited until services are running.")
+            return
+    
+    # Main content area with tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["📤 Upload", "🔍 Query", "📊 Browse Data", "📈 Evaluation"])
+    
+    # Tab 1: File Upload
+    with tab1:
+        st.header("Upload Documents")
+        
+        uploaded_files = st.file_uploader(
+            "Upload files (PDF, TXT, Images, Audio, Video)",
+            accept_multiple_files=True,
+            type=['pdf', 'txt', 'docx', 'jpg', 'jpeg', 'png', 'mp3', 'wav', 'mp4', 'avi']
+        )
+        
+        if uploaded_files:
+            if st.button("Process Files"):
+                with st.spinner("Processing files..."):
+                    for uploaded_file in uploaded_files:
+                        try:
+                            # Save to temp file
+                            with tempfile.NamedTemporaryFile(
+                                delete=False,
+                                suffix=Path(uploaded_file.name).suffix
+                            ) as tmp_file:
+                                tmp_file.write(uploaded_file.read())
+                                tmp_path = Path(tmp_file.name)
+                            
+                            # Ingest file
+                            documents = pipeline.ingest_documents(tmp_path)
+                            
+                            # Clean up
+                            os.unlink(tmp_path)
+                            
+                            if documents:
+                                st.success(f"✅ Processed: {uploaded_file.name}")
+                            else:
+                                st.warning(f"⚠️ Failed: {uploaded_file.name}")
+                        
+                        except Exception as e:
+                            st.error(f"❌ Error processing {uploaded_file.name}: {e}")
+    
+    # Tab 2: Query Interface
+    with tab2:
+        st.header("Query the Knowledge Base")
+        
+        query_text = st.text_input(
+            "Enter your question:",
+            placeholder="What information are you looking for?"
+        )
+        
+        if st.button("Search") and query_text:
+            with st.spinner("Searching..."):
+                try:
+                    # Execute query
+                    answer = pipeline.query(query_text, top_k=top_k)
+                    
+                    # Display answer
+                    st.markdown("### 💡 Answer")
+                    st.markdown(answer.text)
+                    
+                    # Display metadata
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Confidence", f"{answer.confidence:.2%}")
+                    with col2:
+                        st.metric("Latency", f"{answer.latency_ms:.0f}ms")
+                    with col3:
+                        st.metric("Sources", len(answer.sources))
+                    
+                    # Display sources
+                    st.markdown("### 📚 Sources")
+                    for i, source in enumerate(answer.sources, 1):
+                        with st.expander(
+                            f"Source {i} - {source.modality.value} (Score: {source.score:.3f})"
+                        ):
+                            st.text(source.content)
+                            st.json(source.metadata)
+                
+                except Exception as e:
+                    st.error(f"❌ Query failed: {e}")
+                    logger.error(f"Query error: {e}")
+    
+    # Tab 3: Browse Data
+    with tab3:
+        st.header("Browse Existing Data")
+
+        try:
+            # Get stats from databases
+            from src.vector_store.qdrant_client import QdrantVectorStore
+            from src.graph.neo4j_client import Neo4jClient
+
+            qdrant_client = QdrantVectorStore()
+            neo4j_client = Neo4jClient()
+
+            # Qdrant stats
+            st.subheader("📦 Vector Store (Qdrant)")
+            try:
+                info = qdrant_client.client.get_collection('multimodal_chunks')
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Total Chunks", info.points_count)
+                with col2:
+                    st.metric("Vector Dimensions", info.config.params.vectors.size)
+
+                # Show sample chunks
+                if info.points_count > 0:
+                    st.markdown("**Sample Chunks:**")
+                    result = qdrant_client.client.scroll(
+                        collection_name='multimodal_chunks',
+                        limit=10,
+                        with_payload=True,
+                        with_vectors=False
+                    )
+                    points, _ = result
+
+                    for i, point in enumerate(points, 1):
+                        with st.expander(f"Chunk {i} - {point.payload.get('modality', 'N/A')}"):
+                            st.text(point.payload.get('content', '')[:500])
+                            st.json({k: v for k, v in point.payload.items() if k != 'content'})
+                else:
+                    st.warning("No chunks in vector store. Upload documents or run mock data script.")
+            except Exception as e:
+                st.error(f"Error accessing Qdrant: {e}")
+
+            st.markdown("---")
+
+            # Neo4j stats
+            st.subheader("🕸️ Knowledge Graph (Neo4j)")
+            try:
+                with neo4j_client.driver.session() as session:
+                    # Count entities
+                    result = session.run("MATCH (e:Entity) RETURN count(e) as count")
+                    entity_count = result.single()["count"]
+
+                    # Count relationships
+                    result = session.run("MATCH ()-[r]->() RETURN count(r) as count")
+                    rel_count = result.single()["count"]
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("Total Entities", entity_count)
+                    with col2:
+                        st.metric("Total Relationships", rel_count)
+
+                    # Show sample entities
+                    if entity_count > 0:
+                        st.markdown("**Sample Entities:**")
+                        result = session.run("""
+                            MATCH (e:Entity)
+                            RETURN e.name as name, e.type as type, e.source_modality as modality
+                            LIMIT 20
+                        """)
+
+                        entities_data = []
+                        for record in result:
+                            entities_data.append({
+                                "Name": record["name"],
+                                "Type": record["type"],
+                                "Modality": record["modality"]
+                            })
+
+                        st.dataframe(entities_data, use_container_width=True)
+
+                        st.info("💡 Open Neo4j Browser at http://localhost:7474 to visualize the knowledge graph")
+                    else:
+                        st.warning("No entities in knowledge graph. Upload documents or run mock data script.")
+
+                neo4j_client.close()
+            except Exception as e:
+                st.error(f"Error accessing Neo4j: {e}")
+
+        except Exception as e:
+            st.error(f"Error loading data: {e}")
+
+    # Tab 4: Evaluation
+    with tab4:
+        st.header("Evaluation Metrics")
+        
+        st.info("Evaluation framework is configured. Run test suite to see results.")
+        
+        if st.button("Run Evaluation Suite"):
+            st.warning("Evaluation suite not yet implemented in UI")
+            st.markdown("""
+            To run evaluations, use:
+            ```bash
+            python -m pytest tests/ -v
+            ```
+            """)
+    
+    # Footer
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style='text-align: center'>
+            <p>Multimodal Enterprise RAG System v1.0.0</p>
+            <p>Built with evaluation-first design principles</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+if __name__ == "__main__":
+    main()
+
