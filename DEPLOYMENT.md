@@ -29,8 +29,18 @@ source venv/bin/activate  # On macOS/Linux
 # or
 venv\Scripts\activate  # On Windows
 
-# Install dependencies
+# Upgrade pip
+pip install --upgrade pip
+
+# Option A: Use automated installation script (recommended)
+bash scripts/install_dependencies.sh
+
+# Option B: Install manually
+pip install numpy  # Install numpy first to avoid errors
 pip install -r requirements.txt
+
+# Option C: Use stable pinned versions (if Option A/B fails)
+pip install -r requirements-stable.txt
 ```
 
 ### 3. Configure Environment Variables
@@ -54,6 +64,7 @@ docker-compose ps
 ```
 
 Expected services:
+
 - Neo4j: http://localhost:7474 (bolt://localhost:7687)
 - Qdrant: http://localhost:6333
 - Redis: localhost:6379
@@ -66,6 +77,7 @@ python scripts/prepare_mock_data.py
 ```
 
 This creates:
+
 - 20 chunks in Qdrant
 - 44 entities in Neo4j
 - 37 relationships in Neo4j
@@ -73,12 +85,15 @@ This creates:
 ### 6. Start Application
 
 **Option A: Streamlit UI**
+
 ```bash
 streamlit run src/ui/app.py
 ```
+
 Then open http://localhost:8501
 
 **Option B: Python API**
+
 ```bash
 python
 >>> from src.pipeline import MultimodalRAGPipeline
@@ -96,6 +111,7 @@ python scripts/test_graph_search.py
 ```
 
 Expected output:
+
 - Query "Andrew Ng" returns 10 results
 - NO Fei-Fei Li content (graph filtering working)
 - All results marked as "vector+graph"
@@ -108,6 +124,58 @@ Expected output:
 4. Verify: No Fei-Fei Li in results
 
 ## Troubleshooting
+
+### Installation Issues
+
+#### Error: "RuntimeError: Numpy is not available"
+
+This happens when packages try to use numpy during installation before it's installed.
+
+**Solution:**
+
+```bash
+# Install numpy first
+pip install numpy
+
+# Then install other requirements
+pip install -r requirements.txt
+```
+
+Or use the automated script:
+
+```bash
+bash scripts/install_dependencies.sh
+```
+
+#### Error: "ModuleNotFoundError: No module named 'loguru'"
+
+You forgot to activate the virtual environment or install dependencies.
+
+**Solution:**
+
+```bash
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+#### Installation takes too long or fails
+
+Use the stable pinned versions:
+
+```bash
+pip install -r requirements-stable.txt
+```
+
+You can also skip evaluation packages (deepeval, ragas) if you don't need them:
+
+```bash
+# Edit requirements.txt and comment out these lines:
+# deepeval>=0.20.0
+# ragas>=0.1.0
+
+# Then install
+pip install -r requirements.txt
+```
 
 ### Services Not Running
 
@@ -126,6 +194,7 @@ docker-compose logs qdrant
 ### Qdrant Version Mismatch Warning
 
 If you see version mismatch warnings, you can either:
+
 1. Ignore them (usually safe)
 2. Update Qdrant: `docker-compose pull qdrant && docker-compose up -d qdrant`
 
@@ -161,15 +230,18 @@ Click "🔄 Clear Cache & Reload Pipeline" button in the sidebar.
 ## Key Features Implemented
 
 ✅ **Graph-Based Filtering**
+
 - Excludes semantically similar but unconnected content
 - Uses Neo4j knowledge graph for relationship-aware search
 
 ✅ **Hybrid Search**
+
 - Vector search (50% weight)
 - Graph search (30% weight)
 - Keyword search (20% weight - stub)
 
 ✅ **Multimodal Support**
+
 - Text, Image, Audio, Video ingestion
 - Entity extraction and relationship mapping
 
@@ -183,8 +255,8 @@ Click "🔄 Clear Cache & Reload Pipeline" button in the sidebar.
 ## Support
 
 For issues, check:
+
 - Logs: `docker-compose logs`
 - Streamlit terminal output
 - Neo4j browser: http://localhost:7474
 - Qdrant dashboard: http://localhost:6333/dashboard
-
