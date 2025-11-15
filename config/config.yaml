@@ -1,0 +1,190 @@
+system:
+  name: "Multimodal Enterprise RAG"
+  version: "1.0.0"
+  environment: "development"
+
+llm:
+  provider: "openai"
+  model: "gpt-4-turbo-preview"
+  temperature: 0.1
+  max_tokens: 2000
+  timeout: 60
+
+embeddings:
+  provider: "openai"
+  model: "text-embedding-3-large"
+  dimensions: 3072
+  batch_size: 100
+
+ingestion:
+  supported_formats:
+    text: [".txt", ".pdf", ".docx", ".md"]
+    image: [".jpg", ".jpeg", ".png", ".bmp", ".tiff"]
+    audio: [".mp3", ".wav", ".m4a", ".flac"]
+    video: [".mp4", ".avi", ".mov", ".mkv"]
+
+  chunking:
+    strategy: "semantic" # semantic, fixed, recursive
+    chunk_size: 512
+    chunk_overlap: 50
+    min_chunk_size: 100
+
+  image:
+    ocr_enabled: true
+    captioning_model: "Salesforce/blip-image-captioning-large"
+    max_dimension: 2048
+
+  audio:
+    transcription_model: "whisper-large-v3"
+    language: "en"
+    enable_diarization: true
+
+  video:
+    fps_extraction: 1 # Extract 1 frame per second
+    enable_scene_detection: true
+    scene_threshold: 27.0
+    max_frames: 100
+
+extraction:
+  entity_extraction:
+    model: "gpt-4-turbo-preview"
+    prompt_template: "entity_extraction_v1"
+    batch_size: 10
+
+  relationship_extraction:
+    model: "gpt-4-turbo-preview"
+    prompt_template: "relationship_extraction_v1"
+
+  cross_modal_linking:
+    enabled: true
+    similarity_threshold: 0.85
+    max_candidates: 5
+
+graph:
+  database: "neo4j"
+  batch_size: 100
+  enable_constraints: true
+  enable_indexes: true
+
+  schema:
+    node_types:
+      - "Document"
+      - "Entity"
+      - "Person"
+      - "Organization"
+      - "Location"
+      - "Concept"
+      - "Event"
+      - "Image"
+      - "Audio"
+      - "Video"
+
+    relationship_types:
+      - "MENTIONS"
+      - "RELATED_TO"
+      - "PART_OF"
+      - "LOCATED_IN"
+      - "WORKS_FOR"
+      - "APPEARS_IN"
+      - "TRANSCRIBED_FROM"
+      - "EXTRACTED_FROM"
+
+vector_store:
+  database: "qdrant"
+  collections:
+    text_chunks:
+      vector_size: 3072
+      distance: "Cosine"
+    images:
+      vector_size: 768
+      distance: "Cosine"
+    audio:
+      vector_size: 3072
+      distance: "Cosine"
+    video_frames:
+      vector_size: 768
+      distance: "Cosine"
+
+  indexing:
+    on_disk: true
+    quantization: "scalar"
+
+search:
+  hybrid:
+    enabled: true
+    weights:
+      graph: 0.3
+      keyword: 0.2
+      vector: 0.5
+
+    graph_search:
+      max_depth: 3
+      max_results: 20
+
+    keyword_search:
+      algorithm: "bm25"
+      k1: 1.5
+      b: 0.75
+
+    vector_search:
+      top_k: 20
+      score_threshold: 0.3 # Lowered from 0.7 to allow more results
+
+  reranking:
+    enabled: true
+    model: "cross-encoder/ms-marco-MiniLM-L-12-v2"
+    top_k: 10
+
+query:
+  triage:
+    enabled: true
+    query_types:
+      - "factual"
+      - "lookup"
+      - "reasoning"
+      - "summarization"
+      - "comparison"
+
+  rewriting:
+    enabled: true
+    max_rewrites: 3
+
+  validation:
+    min_length: 3
+    max_length: 500
+    check_pii: true
+
+generation:
+  model: "gpt-4-turbo-preview"
+  temperature: 0.2
+  max_tokens: 1500
+
+  post_processing:
+    hallucination_check: true
+    fact_verification: true
+    citation_required: true
+
+  fallback:
+    enabled: true
+    max_retries: 2
+
+evaluation:
+  metrics:
+    - "faithfulness"
+    - "answer_relevance"
+    - "context_precision"
+    - "context_recall"
+    - "hallucination_rate"
+    - "latency"
+
+  test_suite:
+    path: "data/eval/test_queries.json"
+    min_pass_rate: 0.8
+
+security:
+  enable_auth: false
+  query_filtering: true
+  pii_detection: true
+  rate_limiting:
+    enabled: true
+    max_requests_per_minute: 60
