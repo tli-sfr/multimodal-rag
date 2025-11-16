@@ -52,22 +52,30 @@ class BaseIngester(ABC):
         **kwargs
     ) -> Metadata:
         """Create metadata for document.
-        
+
         Args:
             file_path: Path to file
-            **kwargs: Additional metadata fields
-            
+            **kwargs: Additional metadata fields (can include original_filename, upload_source, speaker_name)
+
         Returns:
             Metadata object
         """
         stat = file_path.stat()
-        
+
+        # Extract original_filename from kwargs or use file_path.name
+        original_filename = kwargs.pop('original_filename', file_path.name)
+        upload_source = kwargs.pop('upload_source', None)
+        speaker_name = kwargs.pop('speaker_name', None)
+
         return Metadata(
             source=str(file_path),
             modality=self.modality,
             file_path=str(file_path),
             file_size=stat.st_size,
             mime_type=self._get_mime_type(file_path),
+            original_filename=original_filename,
+            upload_source=upload_source,
+            speaker_name=speaker_name,
             **kwargs
         )
     

@@ -48,35 +48,36 @@ class IngestionPipeline:
         
         return ext_map
     
-    def ingest_file(self, file_path: Path) -> Optional[Document]:
+    def ingest_file(self, file_path: Path, **kwargs) -> Optional[Document]:
         """Ingest a single file.
-        
+
         Args:
             file_path: Path to file
-            
+            **kwargs: Additional parameters to pass to ingester (original_filename, upload_source, speaker_name)
+
         Returns:
             Document object or None if ingestion failed
         """
         # Determine modality from extension
         modality = self.extension_map.get(file_path.suffix.lower())
-        
+
         if modality is None:
             logger.warning(f"Unsupported file type: {file_path.suffix}")
             return None
-        
+
         # Get appropriate ingester
         ingester = self.ingesters.get(modality)
-        
+
         if ingester is None:
             logger.error(f"No ingester available for modality: {modality}")
             return None
-        
-        # Ingest file
+
+        # Ingest file with kwargs
         try:
-            document = ingester.ingest(file_path)
+            document = ingester.ingest(file_path, **kwargs)
             logger.info(f"Successfully ingested: {file_path}")
             return document
-        
+
         except Exception as e:
             logger.error(f"Failed to ingest {file_path}: {e}")
             return None
@@ -85,38 +86,40 @@ class IngestionPipeline:
         self,
         directory: Path,
         recursive: bool = True,
-        parallel: bool = True
+        parallel: bool = True,
+        **kwargs
     ) -> List[Document]:
         """Ingest all supported files in a directory.
-        
+
         Args:
             directory: Path to directory
             recursive: Recursively process subdirectories
             parallel: Use parallel processing
-            
+            **kwargs: Additional parameters to pass to ingesters (upload_source)
+
         Returns:
             List of ingested documents
         """
         if not directory.exists() or not directory.is_dir():
             raise ValueError(f"Invalid directory: {directory}")
-        
+
         # Find all supported files
         files = self._find_supported_files(directory, recursive)
-        
+
         logger.info(f"Found {len(files)} supported files in {directory}")
-        
+
         if not files:
             return []
-        
+
         # Ingest files
         if parallel and len(files) > 1:
-            documents = self._ingest_parallel(files)
+            documents = self._ingest_parallel(files, **kwargs)
         else:
-            documents = self._ingest_sequential(files)
-        
+            documents = self._ingest_sequential(files, **kwargs)
+
         successful = len([d for d in documents if d is not None])
         logger.info(f"Successfully ingested {successful}/{len(files)} files")
-        
+
         return [d for d in documents if d is not None]
     
     def _find_supported_files(
@@ -143,41 +146,43 @@ class IngestionPipeline:
         
         return sorted(files)
     
-    def _ingest_sequential(self, files: List[Path]) -> List[Optional[Document]]:
+    def _ingest_sequential(self, files: List[Path], **kwargs) -> List[Optional[Document]]:
         """Ingest files sequentially.
-        
+
         Args:
             files: List of file paths
-            
+            **kwargs: Additional parameters to pass to ingesters
+
         Returns:
             List of documents
         """
         documents = []
-        
+
         for file_path in tqdm(files, desc="Ingesting files"):
-            doc = self.ingest_file(file_path)
+            doc = self.ingest_file(file_path, **kwargs)
             documents.append(doc)
-        
+
         return documents
-    
-    def _ingest_parallel(self, files: List[Path]) -> List[Optional[Document]]:
+
+    def _ingest_parallel(self, files: List[Path], **kwargs) -> List[Optional[Document]]:
         """Ingest files in parallel.
-        
+
         Args:
             files: List of file paths
-            
+            **kwargs: Additional parameters to pass to ingesters
+
         Returns:
             List of documents
         """
         documents = [None] * len(files)
-        
+
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             # Submit all tasks
             future_to_idx = {
-                executor.submit(self.ingest_file, file_path): idx
+                executor.submit(self.ingest_file, file_path, **kwargs): idx
                 for idx, file_path in enumerate(files)
             }
-            
+
             # Collect results with progress bar
             with tqdm(total=len(files), desc="Ingesting files") as pbar:
                 for future in as_completed(future_to_idx):
@@ -188,7 +193,7 @@ class IngestionPipeline:
                         logger.error(f"Error processing file: {e}")
                         documents[idx] = None
                     pbar.update(1)
-        
+
         return documents
     
     def get_supported_extensions(self) -> List[str]:

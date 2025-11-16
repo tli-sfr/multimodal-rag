@@ -60,35 +60,44 @@ class AudioIngester(BaseIngester):
     
     def ingest(self, file_path: Path, **kwargs) -> Document:
         """Ingest audio file.
-        
+
         Args:
             file_path: Path to audio file
-            **kwargs: Additional parameters
-            
+            **kwargs: Additional parameters (original_filename, upload_source)
+
         Returns:
             Document with transcription
         """
         if not self.validate_file(file_path):
             raise ValueError(f"Invalid audio file: {file_path}")
-        
+
         logger.info(f"Ingesting audio: {file_path}")
-        
+
+        # Extract speaker name from filename (original or current)
+        filename_to_parse = kwargs.get('original_filename', file_path.name)
+        speaker_name = self._extract_speaker_name(filename_to_parse)
+
+        if speaker_name:
+            logger.info(f"Extracted speaker name from filename: {speaker_name}")
+            kwargs['speaker_name'] = speaker_name
+
         # Get audio metadata
         audio_info = self._get_audio_info(file_path)
-        
+
         # Transcribe audio
         transcription = self._transcribe(file_path)
-        
+
         if not transcription or not transcription.get('text'):
             raise ValueError(f"No transcription generated for {file_path}")
-        
-        # Create metadata
+
+        # Create metadata (will include speaker_name, original_filename, upload_source from kwargs)
         metadata = self.create_metadata(
             file_path,
             duration_seconds=audio_info.get('duration'),
             sample_rate=audio_info.get('sample_rate'),
             channels=audio_info.get('channels'),
             language=transcription.get('language', self.language),
+            **kwargs  # Pass through original_filename, upload_source, speaker_name
         )
         
         # Create document
@@ -125,6 +134,53 @@ class AudioIngester(BaseIngester):
         
         return document
     
+    def _extract_speaker_name(self, filename: str) -> Optional[str]:
+        """Extract speaker name from filename.
+
+        Handles patterns like:
+        - elon_musk_ai_opinion.mp3 -> Elon Musk
+        - elon-musk-ai-opinion.mp3 -> Elon Musk
+        - andrew_ng.mp3 -> Andrew Ng
+        - elon_ai_danger.mp3 -> Elon (single name before stop word)
+
+        Args:
+            filename: Original filename
+
+        Returns:
+            Speaker name or None
+        """
+        import re
+
+        # Remove file extension
+        name_part = Path(filename).stem
+
+        # Split by underscore, hyphen, or space
+        parts = re.split(r'[_\-\s]+', name_part)
+
+        # Common non-name words to stop at
+        stop_words = {
+            'ai', 'opinion', 'audio', 'interview', 'talk', 'speech',
+            'lecture', 'presentation', 'discussion', 'about', 'on',
+            'transcript', 'recording', 'danger', 'extracted', 'caption',
+            'video', 'clip', 'segment', 'part', 'chapter'
+        }
+
+        # Collect name parts (stop at first stop word)
+        name_parts = []
+        for part in parts:
+            if part.lower() in stop_words:
+                break
+            if part and len(part) > 1:  # Skip single characters
+                name_parts.append(part)
+
+        # If we found 1+ parts, assume it's a name
+        # (Changed from 2+ to 1+ to handle single names like "Elon")
+        if len(name_parts) >= 1:
+            speaker_name = ' '.join(word.capitalize() for word in name_parts)
+            return speaker_name
+
+        return None
+
     def _get_audio_info(self, file_path: Path) -> dict:
         """Get audio file information."""
         try:

@@ -61,29 +61,43 @@ class HybridSearchEngine:
         modality_filter: Optional[ModalityType] = None
     ) -> List[SearchResult]:
         """Perform hybrid search.
-        
+
         Args:
             query: Search query
             top_k: Number of results to return
             modality_filter: Filter by modality
-            
+
         Returns:
             Ranked list of search results
         """
         top_k = top_k or self.top_k
-        
+
         logger.info(f"Performing hybrid search for: {query.text}")
 
         # 1. Vector search
         vector_results = self._vector_search(query, modality_filter)
 
         # 2. Graph search (if entities detected)
-        graph_results = self._graph_search(query)
+        # Returns (graph_results, entities_were_extracted)
+        graph_results, entities_extracted = self._graph_search(query)
 
         # 3. Apply graph-based filtering if enabled
-        if self.use_graph_filter and graph_results:
-            vector_results = self._apply_graph_filter(vector_results, graph_results)
-            logger.info(f"Graph filter applied: {len(vector_results)} vector results remain")
+        if self.use_graph_filter:
+            if entities_extracted and not graph_results:
+                # Entities were extracted from query but nothing found in graph
+                # This could mean:
+                # 1. Query asks about something not in our knowledge base (e.g., "What did John Doe say?")
+                # 2. Query uses generic words that aren't real entities (e.g., "Who raised the concern?")
+                #
+                # For case 2, we should fall back to vector search instead of returning empty.
+                # We can detect this by checking if any extracted "entities" look like proper names
+                # (capitalized words that aren't at the start of the query)
+                logger.info("Entities extracted from query but not found in graph - using vector search only")
+                # Don't filter, just use vector results as-is
+            elif graph_results:
+                # Entities found in graph - filter vector results
+                vector_results = self._apply_graph_filter(vector_results, graph_results)
+                logger.info(f"Graph filter applied: {len(vector_results)} vector results remain")
 
         # 4. Keyword search (simple BM25-like)
         keyword_results = self._keyword_search(query, modality_filter)
@@ -133,7 +147,7 @@ class HybridSearchEngine:
             logger.error(f"Vector search failed: {e}")
             return []
     
-    def _graph_search(self, query: Query) -> List[SearchResult]:
+    def _graph_search(self, query: Query) -> tuple[List[SearchResult], bool]:
         """Perform graph-based search using knowledge graph.
 
         Strategy:
@@ -147,7 +161,7 @@ class HybridSearchEngine:
             query: Search query
 
         Returns:
-            Search results from graph traversal
+            Tuple of (search results from graph traversal, whether entities were extracted)
         """
         try:
             # Step 1: Extract potential entity names from query
@@ -166,7 +180,10 @@ class HybridSearchEngine:
             # Filter out very short words and common stop words
             stop_words = {'what', 'is', 'the', 'a', 'an', 'about', 'how', 'why', 'when', 'where',
                          'who', 'which', 'their', 'his', 'her', 'its', 'our', 'your', 'my',
-                         'opinion', 'view', 'think', 'thought', 'idea', 'belief'}
+                         'opinion', 'view', 'think', 'thought', 'idea', 'belief', 'say', 'said',
+                         'did', 'do', 'does', 'have', 'has', 'had', 'raised', 'raise', 'concern',
+                         'concerns', 'talked', 'talk', 'discussed', 'discuss', 'mentioned', 'mention',
+                         'on', 'in', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as'}
 
             potential_entities = [
                 e for e in potential_entities
@@ -175,7 +192,7 @@ class HybridSearchEngine:
 
             if not potential_entities:
                 logger.debug("No potential entities found in query")
-                return []
+                return [], False  # No entities extracted
 
             logger.debug(f"Searching for entities: {potential_entities}")
 
@@ -187,8 +204,8 @@ class HybridSearchEngine:
             )
 
             if not matched_entities:
-                logger.debug("No matching entities found in graph")
-                return []
+                logger.info(f"Entities extracted ({potential_entities}) but not found in graph")
+                return [], True  # Entities were extracted but not found
 
             logger.info(f"Found {len(matched_entities)} matching entities in graph")
 
@@ -203,7 +220,7 @@ class HybridSearchEngine:
 
             if not related_chunks:
                 logger.debug("No related chunks found through graph traversal")
-                return []
+                return [], True  # Entities found but no related chunks
 
             logger.info(f"Found {len(related_chunks)} related chunks through graph")
 
@@ -222,11 +239,11 @@ class HybridSearchEngine:
                     result.source = 'graph'
 
             logger.info(f"Graph search returned {len(search_results)} results")
-            return search_results
+            return search_results, True  # Entities found and results returned
 
         except Exception as e:
             logger.error(f"Graph search failed: {e}")
-            return []
+            return [], False  # Error occurred, don't apply strict filtering
     
     def _apply_graph_filter(
         self,

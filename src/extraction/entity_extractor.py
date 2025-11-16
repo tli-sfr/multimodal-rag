@@ -65,26 +65,45 @@ class EntityExtractor:
     
     def extract_from_chunk(self, chunk: Chunk) -> List[Entity]:
         """Extract entities from a single chunk.
-        
+
         Args:
             chunk: Text chunk
-            
+
         Returns:
             List of extracted entities
         """
         if not chunk.content or len(chunk.content.strip()) < 10:
             return []
-        
+
+        # Check if speaker_name is in metadata - if so, add as a Person entity
+        speaker_entities = []
+        if chunk.metadata.speaker_name:
+            logger.info(f"Adding speaker entity from metadata: {chunk.metadata.speaker_name}")
+            speaker_entity = Entity(
+                name=chunk.metadata.speaker_name,
+                entity_type=EntityType.PERSON,
+                description=f"Speaker identified from filename: {chunk.metadata.original_filename or chunk.metadata.source}",
+                confidence=1.0,  # High confidence since it's from filename
+                source_modality=chunk.modality,
+                source_id=chunk.id,
+                properties={
+                    'chunk_index': chunk.chunk_index,
+                    'parent_id': str(chunk.parent_id),
+                    'from_filename': True
+                }
+            )
+            speaker_entities.append(speaker_entity)
+
         try:
             # Generate prompt
             messages = self.prompt.format_messages(text=chunk.content)
-            
+
             # Call LLM
             response = self.llm.invoke(messages)
-            
+
             # Parse response
             entities_data = self._parse_response(response.content)
-            
+
             # Create Entity objects
             entities = []
             for entity_dict in entities_data:
@@ -102,17 +121,21 @@ class EntityExtractor:
                         }
                     )
                     entities.append(entity)
-                
+
                 except (KeyError, ValueError) as e:
                     logger.warning(f"Failed to create entity from {entity_dict}: {e}")
                     continue
-            
-            logger.debug(f"Extracted {len(entities)} entities from chunk {chunk.id}")
-            return entities
-        
+
+            # Combine speaker entities with extracted entities
+            all_entities = speaker_entities + entities
+
+            logger.debug(f"Extracted {len(all_entities)} entities from chunk {chunk.id} ({len(speaker_entities)} from metadata, {len(entities)} from content)")
+            return all_entities
+
         except Exception as e:
             logger.error(f"Entity extraction failed for chunk {chunk.id}: {e}")
-            return []
+            # Still return speaker entities even if LLM extraction fails
+            return speaker_entities
     
     def extract_from_chunks(
         self,

@@ -97,6 +97,11 @@ class Metadata(BaseModel):
     tags: List[str] = Field(default_factory=list)
     custom: Dict[str, Any] = Field(default_factory=dict)
 
+    # New fields for tracking upload source and original filename
+    original_filename: Optional[str] = None  # Original filename before temp file
+    upload_source: Optional[str] = None  # "ui" or "script"
+    speaker_name: Optional[str] = None  # Extracted from filename for videos/audio
+
 
 class Chunk(BaseModel):
     """Text chunk model."""

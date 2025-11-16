@@ -17,7 +17,12 @@ from loguru import logger
 st.set_page_config(
     page_title="Multimodal Enterprise RAG",
     page_icon="🔍",
-    layout="wide"
+    layout="wide",
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': None
+    }
 )
 
 # Import pipeline (with caching)
@@ -42,30 +47,22 @@ def main():
     with st.sidebar:
         st.header("⚙️ Configuration")
 
-        # Cache control
-        if st.button("🔄 Clear Cache & Reload Pipeline"):
-            st.cache_resource.clear()
-            st.success("Cache cleared! Pipeline will reload on next query.")
-            st.rerun()
-
-        st.markdown("---")
-
         top_k = st.slider(
             "Number of results",
             min_value=1,
-            max_value=20,
+            max_value=50,
             value=10
         )
-        
+
         st.markdown("---")
         st.header("📊 System Status")
 
         try:
             pipeline = get_pipeline()
-            st.success("✅ Pipeline initialized")
+            st.success("✅ Initialized")
         except Exception as e:
             error_msg = str(e)
-            st.error(f"❌ Pipeline error: {error_msg}")
+            st.error(f"❌ Error: {error_msg}")
 
             # Provide helpful error messages
             if "Connection refused" in error_msg or "61" in error_msg:
@@ -99,6 +96,14 @@ def main():
             st.markdown("---")
             st.markdown("**Note:** You can still view the UI, but functionality will be limited until services are running.")
             return
+
+        st.markdown("---")
+
+        # Cache control at bottom
+        if st.button("🔄 Clear Cache"):
+            st.cache_resource.clear()
+            st.success("Cache cleared! Will reload on next query.")
+            st.rerun()
     
     # Main content area with tabs
     tab1, tab2, tab3, tab4 = st.tabs(["📤 Upload", "🔍 Query", "📊 Browse Data", "📈 Evaluation"])
@@ -106,17 +111,26 @@ def main():
     # Tab 1: File Upload
     with tab1:
         st.header("Upload Documents")
-        
+
+        # Initialize session state for uploaded files
+        if 'uploaded_files' not in st.session_state:
+            st.session_state.uploaded_files = None
+
         uploaded_files = st.file_uploader(
             "Upload files (PDF, TXT, Images, Audio, Video)",
             accept_multiple_files=True,
-            type=['pdf', 'txt', 'docx', 'jpg', 'jpeg', 'png', 'mp3', 'wav', 'mp4', 'avi']
+            type=['pdf', 'txt', 'docx', 'jpg', 'jpeg', 'png', 'mp3', 'wav', 'mp4', 'avi'],
+            key='file_uploader'
         )
-        
+
+        # Update session state when new files are uploaded
         if uploaded_files:
+            st.session_state.uploaded_files = uploaded_files
+
+        if st.session_state.uploaded_files:
             if st.button("Process Files"):
                 with st.spinner("Processing files..."):
-                    for uploaded_file in uploaded_files:
+                    for uploaded_file in st.session_state.uploaded_files:
                         try:
                             # Save to temp file
                             with tempfile.NamedTemporaryFile(
@@ -125,20 +139,29 @@ def main():
                             ) as tmp_file:
                                 tmp_file.write(uploaded_file.read())
                                 tmp_path = Path(tmp_file.name)
-                            
-                            # Ingest file
-                            documents = pipeline.ingest_documents(tmp_path)
-                            
+
+                            # Ingest file with original filename and upload source
+                            # Pass metadata through kwargs
+                            documents = pipeline.ingest_documents(
+                                tmp_path,
+                                original_filename=uploaded_file.name,
+                                upload_source="ui"
+                            )
+
                             # Clean up
                             os.unlink(tmp_path)
-                            
+
                             if documents:
                                 st.success(f"✅ Processed: {uploaded_file.name}")
                             else:
                                 st.warning(f"⚠️ Failed: {uploaded_file.name}")
-                        
+
                         except Exception as e:
                             st.error(f"❌ Error processing {uploaded_file.name}: {e}")
+
+                    # Clear uploaded files after processing
+                    st.session_state.uploaded_files = None
+                    st.rerun()
     
     # Tab 2: Query Interface
     with tab2:
@@ -171,9 +194,31 @@ def main():
                     # Display sources
                     st.markdown("### 📚 Sources")
                     for i, source in enumerate(answer.sources, 1):
-                        with st.expander(
-                            f"Source {i} - {source.modality.value} (Score: {source.score:.3f})"
-                        ):
+                        # Get metadata from source
+                        upload_source = source.metadata.get('upload_source', None)
+                        original_filename = source.metadata.get('original_filename', None)
+                        speaker_name = source.metadata.get('speaker_name', None)
+
+                        # Create icon based on upload source
+                        if upload_source == 'ui':
+                            source_icon = "🌐"
+                        elif upload_source == 'script':
+                            source_icon = "📜"
+                        else:
+                            source_icon = "❓"
+
+                        # Build title
+                        title_parts = [f"{source_icon} Source {i}"]
+                        if speaker_name:
+                            title_parts.append(f"👤 {speaker_name}")
+                        title_parts.append(f"{source.modality.value}")
+                        if original_filename:
+                            title_parts.append(f"({original_filename})")
+                        title_parts.append(f"Score: {source.score:.3f}")
+
+                        title = " - ".join(title_parts)
+
+                        with st.expander(title):
                             st.text(source.content)
                             st.json(source.metadata)
                 
@@ -203,21 +248,82 @@ def main():
                 with col2:
                     st.metric("Vector Dimensions", info.config.params.vectors.size)
 
-                # Show sample chunks
+                # Show uploaded chunks
                 if info.points_count > 0:
-                    st.markdown("**Sample Chunks:**")
+                    st.markdown("**Uploaded Chunks:**")
+
+                    # DEBUG: Show we're using the new code
+                    st.caption("🔧 Debug: Using updated chunk display logic v2")
+
                     result = qdrant_client.client.scroll(
                         collection_name='multimodal_chunks',
-                        limit=10,
+                        limit=50,
                         with_payload=True,
                         with_vectors=False
                     )
                     points, _ = result
 
                     for i, point in enumerate(points, 1):
-                        with st.expander(f"Chunk {i} - {point.payload.get('modality', 'N/A')}"):
+                        # Get metadata - check both top level and nested metadata
+                        payload = point.payload
+                        metadata = payload.get('metadata', {})
+
+                        # Try to get from metadata first, then fall back to top level
+                        modality = metadata.get('modality') or payload.get('modality', 'N/A')
+                        upload_source = metadata.get('upload_source') or payload.get('upload_source', None)
+                        original_filename = metadata.get('original_filename') or payload.get('original_filename', None)
+                        source = metadata.get('source') or payload.get('source', None)
+                        speaker_name = metadata.get('speaker_name') or payload.get('speaker_name', None)
+                        tags = metadata.get('tags') or payload.get('tags', [])
+
+                        # Determine status label based on upload source
+                        if upload_source == 'ui':
+                            status_label = "Uploaded"
+                        elif upload_source == 'script':
+                            status_label = "Pre-loaded"
+                        else:
+                            # If no upload_source, try to use original_filename or source
+                            if original_filename:
+                                status_label = original_filename
+                            elif source:
+                                # Check if source looks like a file path
+                                if '/' in str(source) or '\\' in str(source):
+                                    # Extract just the filename from the full path
+                                    status_label = Path(str(source)).name
+                                else:
+                                    # Use source as-is (e.g., "mock_data_andrew_ng_pdf")
+                                    status_label = str(source)
+                            else:
+                                status_label = "Unknown"
+
+                        # Build title with metadata (no icon)
+                        title_parts = [f"Chunk {i}"]
+                        if speaker_name:
+                            title_parts.append(f"👤 {speaker_name}")
+                        if original_filename:
+                            title_parts.append(f"📄 {original_filename}")
+                        else:
+                            title_parts.append(f"📄 {modality}")
+                        title_parts.append(f"[{status_label}]")
+
+                        # Add mock data tag if present (tags is a list)
+                        if isinstance(tags, list) and 'mock_data' in tags:
+                            title_parts.append("(mock data)")
+                        elif isinstance(tags, str) and tags == 'mock_data':
+                            title_parts.append("(mock data)")
+
+                        title = " - ".join(title_parts)
+
+                        with st.expander(title):
+                            # DEBUG: Show what we detected
+                            st.caption(f"🔍 Debug: source='{source}', upload_source='{upload_source}', tags={tags}, status_label='{status_label}'")
+
+                            # Show content preview
                             st.text(point.payload.get('content', '')[:500])
-                            st.json({k: v for k, v in point.payload.items() if k != 'content'})
+
+                            # Show metadata (excluding content)
+                            metadata_display = {k: v for k, v in point.payload.items() if k != 'content'}
+                            st.json(metadata_display)
                 else:
                     st.warning("No chunks in vector store. Upload documents or run mock data script.")
             except Exception as e:

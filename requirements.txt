@@ -33,7 +33,7 @@ librosa>=0.10.0
 
 # Video
 opencv-python>=4.8.0
-moviepy>=1.0.3
+moviepy>=2.0.0  # Note: v2.x has different API - use 'from moviepy import VideoFileClip' instead of 'moviepy.editor'
 scenedetect[opencv]>=0.6.0
 
 # Document Processing

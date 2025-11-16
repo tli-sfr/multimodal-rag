@@ -56,27 +56,33 @@ class MultimodalRAGPipeline:
     def ingest_documents(
         self,
         input_path: Path,
-        recursive: bool = True
+        recursive: bool = True,
+        **kwargs
     ) -> List[Document]:
         """Ingest documents from path.
-        
+
         Args:
             input_path: Path to file or directory
             recursive: Process directories recursively
-            
+            **kwargs: Additional parameters to pass to ingesters (original_filename, upload_source)
+
         Returns:
             List of ingested documents
         """
         logger.info(f"Starting ingestion from: {input_path}")
-        
+
         # Ingest files
         if input_path.is_file():
-            doc = self.ingestion_pipeline.ingest_file(input_path)
+            doc = self.ingestion_pipeline.ingest_file(input_path, **kwargs)
             documents = [doc] if doc else []
         else:
+            # For directory ingestion, mark as script source if not specified
+            if 'upload_source' not in kwargs:
+                kwargs['upload_source'] = 'script'
             documents = self.ingestion_pipeline.ingest_directory(
                 input_path,
-                recursive=recursive
+                recursive=recursive,
+                **kwargs
             )
         
         if not documents:
@@ -234,8 +240,18 @@ class MultimodalRAGPipeline:
         # Build context from search results
         context_parts = []
         for i, result in enumerate(search_results[:5], 1):
+            # Include speaker name if available
+            speaker_info = ""
+            if hasattr(result, 'metadata') and result.metadata:
+                speaker_name = result.metadata.get('speaker_name')
+                logger.info(f"Result {i}: has metadata, speaker_name={speaker_name}")
+                if speaker_name:
+                    speaker_info = f" - Speaker: {speaker_name}"
+            else:
+                logger.info(f"Result {i}: No metadata attribute or empty metadata")
+
             context_parts.append(
-                f"[{i}] ({result.modality.value}): {result.content}"
+                f"[{i}] ({result.modality.value}{speaker_info}): {result.content}"
             )
 
         context = "\n\n".join(context_parts)
