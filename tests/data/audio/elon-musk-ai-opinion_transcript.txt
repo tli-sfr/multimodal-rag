@@ -1,0 +1,5 @@
+Audio: elon-musk-ai-opinion.mp3
+Transcript:
+ Elon Musk predicts that AI will surpass human intelligence by 2030, leading to a future of sustainable abundance where robots handle all labor, and humans may not need to work for income. He also predicts that Tesla's AI will achieve autonomous driving, has a high confidence that the upcoming GROC-5 model has a 10% chance of achieving AGI, and that Optimus robots will be a massive product. Musk's predictions include both optimistic scenarios of prosperity and concerns about the need to ensure AI is developed safely and beneficially for humanity.
+
+Generated: 2025-11-15T16:54:37.730404

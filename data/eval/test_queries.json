@@ -1,0 +1,67 @@
+{
+  "config": {
+    "min_pass_rate": 0.8,
+    "min_faithfulness": 0.7,
+    "min_relevance": 0.7,
+    "max_hallucination_rate": 0.3,
+    "max_latency_ms": 5000.0
+  },
+  "test_cases": [
+    {
+      "query": "What are the main features of the product?",
+      "query_type": "factual",
+      "expected_answer": null,
+      "expected_entities": ["product", "features"],
+      "expected_modalities": ["text"],
+      "metadata": {
+        "category": "product_info",
+        "difficulty": "easy"
+      }
+    },
+    {
+      "query": "Who are the key people mentioned in the documents?",
+      "query_type": "lookup",
+      "expected_answer": null,
+      "expected_entities": [],
+      "expected_modalities": ["text", "image"],
+      "metadata": {
+        "category": "entity_extraction",
+        "difficulty": "medium"
+      }
+    },
+    {
+      "query": "Summarize the main points from the presentation",
+      "query_type": "summarization",
+      "expected_answer": null,
+      "expected_entities": [],
+      "expected_modalities": ["text", "image", "video"],
+      "metadata": {
+        "category": "summarization",
+        "difficulty": "hard"
+      }
+    },
+    {
+      "query": "What is the relationship between Company A and Company B?",
+      "query_type": "reasoning",
+      "expected_answer": null,
+      "expected_entities": ["Company A", "Company B"],
+      "expected_modalities": ["text"],
+      "metadata": {
+        "category": "relationship_extraction",
+        "difficulty": "medium"
+      }
+    },
+    {
+      "query": "Compare the performance metrics across different quarters",
+      "query_type": "comparison",
+      "expected_answer": null,
+      "expected_entities": ["performance", "metrics", "quarters"],
+      "expected_modalities": ["text", "image"],
+      "metadata": {
+        "category": "comparison",
+        "difficulty": "hard"
+      }
+    }
+  ]
+}
+

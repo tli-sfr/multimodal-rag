@@ -1,0 +1,4 @@
+scripts/prepare_mock_data.py - Mock data generation script
+scripts/cleanup_mock_data.py - Cleanup script
+scripts/MOCK_DATA_README.md - Detailed documentation
+MOCK_DATA_SUCCESS.md - Success summary

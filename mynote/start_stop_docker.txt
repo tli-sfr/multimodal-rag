@@ -1,0 +1,4 @@
+
+(base) admin@Admins-MacBook-Pro  % docker-compose down 
+(base) admin@Admins-MacBook-Pro  % docker-compose up -d
+

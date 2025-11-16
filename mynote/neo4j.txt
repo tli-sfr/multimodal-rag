@@ -1,0 +1,6 @@
+http://localhost:7474/browser/
+
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=password123
+
+clean up - MATCH (n) DETACH DELETE n;

@@ -1,0 +1,134 @@
+Andrew Ng
+Ng in 2017
+Born Andrew Yan-Tak Ng
+April 18, 1976
+London, United Kingdom
+Education Carnegie Mellon University (BS)
+Massachusetts Institute of
+Technology (MS)
+University of California, Berkeley
+(PhD)
+Known for His work in artiﬁcial intelligence,
+deep learning, MOOC, and
+education technology
+Spouse Carol E. Reiley  (m. 2014) 
+Children 2
+Mother Tisa Ho
+Awards 2007 Sloan Fellowship
+2008 MIT Technology Review
+TR35
+2009 IJCAI Computers and
+Thought Award
+Andrew Ng
+Andrew Yan-Tak Ng (Chinese: 吳恩達; born April 18,
+1976[2]) is a British-American computer scientist and
+technology entrepreneur focusing on machine learning
+and artificial intelligence (AI).[3] Ng was a cofounder
+and head of Google Brain and was the former Chief
+Scientist at Baidu, building the company's Artificial
+Intelligence Group into a team of several thousand
+people.[4]
+Ng is an adjunct professor at Stanford University
+(formerly associate professor and Director of its
+Stanford AI Lab or SAIL). Ng has also worked in the
+field of online education, cofounding Coursera and
+DeepLearning.AI.[5] He has spearheaded many efforts
+to "democratize deep learning" teaching over 8 million
+students through his online courses.[6][3][7] Ng is
+renowned globally in computer science, recognized in
+Time magazine's 100 Most Influential People in 2012
+and Fast Company's Most Creative People in 2014. His
+influence extends to being named in the Time100 AI
+Most Influential People in 2023.[7]
+In 2018, he launched and currently heads the AI Fund,
+initially a $175-million investment fund for backing
+artificial intelligence startups. He has founded Landing
+AI, which provides AI-powered SaaS products.[8]
+On April 11, 2024, Amazon announced the appointment
+of Ng to its board of directors.[9]
+Ng was born in London,[10] in 1976 to Ronald Paul Ng, a
+hematologist and lecturer at UCL Medical School, and
+Tisa Ho, an arts administrator working at the London
+Film Festival.[11][12][13] His parents were both
+immigrants from Hong Kong. He has at least one
+brother.[12] Ng and his family moved back to Hong
+Kong and he spent his early years there. At the age of six
+Biography
+11/14/25, 8:49 PM Andrew Ng - Wikipedia
+https://en.wikipedia.org/wiki/Andrew_Ng 1/122013 Time 100 Most Inﬂuential
+People
+2013 Fortune's 40 under 40
+2013 CNN 10
+2014 Fast Company's Most
+Creative People in Business
+2015 World Economic Forum
+Young Global Leaders
+2023 Time 100 Most Inﬂuential
+People in AI[ 1 ] 
+Scientiﬁc career
+Fields Computer science, artiﬁcial
+intelligence, machine learning,
+natural language processing,
+computer vision
+Institutions Stanford University
+Google Brain
+Coursera
+Baidu
+Thesis Shaping and policy search in
+reinforcement learning (https://w
+ww.cs.ubc.ca/~nando/550-2006/
+handouts/andrew-ng.pdf) ( 2 0 0 3 ) 
+Doctoral
+advisor
+Michael I. Jordan
+Notable
+students
+Ian Goodfellow
+David Stavens
+Pieter Abbeel
+Quoc Viet Le
+Ashutosh Saxena
+Website andrewng.org (https://andrewng.
+org)
+Andrew Ng
+Traditional Chinese 吳恩達
+Simpliﬁed Chinese 吴恩达
+T r a n s c r i p t i o n s 
+he began learning the basics of programming through
+some books. In 1984 he and his family moved to
+Singapore.[10] Ng attended and graduated from Raffles
+Institution.[14] During his high school years, he
+demonstrated exceptional mathematical ability,
+winning a Silver Medal at the International
+Mathematical Olympiad.[15]
+In 1997, he earned his undergraduate degree with a
+triple major in computer science, statistics, and
+economics from Carnegie Mellon University in
+Pittsburgh, Pennsylvania. Between 1996 and 1998 he
+also conducted research on reinforcement learning,
+model selection, and feature selection at the AT&T Bell
+Labs.[16]
+In 1998, Ng earned his master's degree in Electrical
+Engineering and Computer Science from the
+Massachusetts Institute of Technology (MIT) in
+Cambridge, Massachusetts. At MIT, he built the first
+publicly available, automatically indexed web-search
+engine for research papers on the web. It was a
+precursor to CiteSeerX/ResearchIndex, but specialized
+in machine learning.[16]
+In 2002, he received his Doctor of Philosophy (Ph.D.) in
+Computer Science from the University of California,
+Berkeley, under the supervision of Michael I. Jordan.
+His thesis is titled "Shaping and policy search in
+reinforcement learning" and is well-cited to this
+day.[16][17]
+He started working as an assistant professor at Stanford
+University in 2002 and as an associate professor in
+2009.[18]
+He currently lives in Los Altos Hills, California. In 2014,
+he married Carol E. Reiley.[19] They have two children: a
+daughter born in 2019[20] and a son born in 2021.[21]
+The MIT Technology Review named Ng and Reiley an
+"AI power couple".[22][23]
+11/14/25, 8:49 PM Andrew Ng - Wikipedia
+https://en.wikipedia.org/wiki/Andrew_Ng 2/12
