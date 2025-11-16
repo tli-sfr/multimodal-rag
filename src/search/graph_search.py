@@ -65,23 +65,64 @@ class GraphSearcher:
     
     def _extract_entity_names(self, text: str) -> List[str]:
         """Extract potential entity names from text.
-        
+
+        This method extracts both single-word and multi-word entities
+        by looking for sequences of capitalized words.
+
         Args:
             text: Query text
-            
+
         Returns:
             List of potential entity names
         """
-        # Simple extraction - in production, use NER
-        # For now, just return capitalized words
         words = text.split()
         entities = []
-        
-        for word in words:
-            if word[0].isupper() and len(word) > 2:
-                entities.append(word)
-        
-        return entities
+
+        # Common question words to skip
+        skip_words = {'Who', 'What', 'Where', 'When', 'Why', 'How', 'Tell', 'Show', 'Find'}
+
+        # Extract multi-word entities (sequences of capitalized words)
+        i = 0
+        while i < len(words):
+            # Check if current word is capitalized (skip common question words)
+            if words[i] and words[i][0].isupper() and words[i] not in skip_words:
+                # Start building a multi-word entity
+                entity_words = [words[i]]
+                j = i + 1
+
+                # Continue adding consecutive capitalized words
+                # Allow short words (2 chars) if they're part of a multi-word entity
+                while j < len(words) and words[j] and words[j][0].isupper() and words[j] not in skip_words:
+                    entity_words.append(words[j])
+                    j += 1
+
+                # Build the full entity name
+                full_entity = ' '.join(entity_words)
+
+                # Add the multi-word entity if it has multiple words
+                if len(entity_words) > 1:
+                    entities.append(full_entity)
+                    # Also add individual words that are long enough (>2 chars)
+                    for word in entity_words:
+                        if len(word) > 2:
+                            entities.append(word)
+                # Add single word if it's long enough
+                elif len(entity_words[0]) > 2:
+                    entities.append(entity_words[0])
+
+                i = j
+            else:
+                i += 1
+
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_entities = []
+        for entity in entities:
+            if entity not in seen:
+                seen.add(entity)
+                unique_entities.append(entity)
+
+        return unique_entities
     
     def _search_from_entity(self, entity_name: str) -> List[SearchResult]:
         """Search graph starting from an entity.
