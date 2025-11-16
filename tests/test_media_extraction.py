@@ -148,7 +148,7 @@ class TestVideoExtraction:
     @pytest.mark.slow
     def test_video_audio_extraction(self):
         """Test extracting audio from video using MoviePy."""
-        test_file = Path("tests/data/video/elon_ai_danger.mp4")
+        test_file = Path("tests/data/video/elon_musk_ai_danger.mp4")
         
         if not test_file.exists():
             pytest.skip(f"Test file not found: {test_file}")
@@ -180,7 +180,7 @@ class TestVideoExtraction:
     @pytest.mark.slow
     def test_video_frame_extraction(self):
         """Test extracting frames from video."""
-        test_file = Path("tests/data/video/elon_ai_danger.mp4")
+        test_file = Path("tests/data/video/elon_musk_ai_danger.mp4")
 
         if not test_file.exists():
             pytest.skip(f"Test file not found: {test_file}")
@@ -216,7 +216,7 @@ class TestVideoExtraction:
     @pytest.mark.slow
     def test_video_audio_transcription(self):
         """Test full pipeline: extract audio from video and transcribe."""
-        test_file = Path("tests/data/video/elon_ai_danger.mp4")
+        test_file = Path("tests/data/video/elon_musk_ai_danger.mp4")
 
         if not test_file.exists():
             pytest.skip(f"Test file not found: {test_file}")
@@ -265,7 +265,7 @@ class TestSceneDetection:
     @pytest.mark.slow
     def test_scene_detection(self):
         """Test detecting scenes in video using scenedetect."""
-        test_file = Path("tests/data/video/elon_ai_danger.mp4")
+        test_file = Path("tests/data/video/elon_musk_ai_danger.mp4")
 
         if not test_file.exists():
             pytest.skip(f"Test file not found: {test_file}")

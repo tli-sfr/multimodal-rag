@@ -173,8 +173,8 @@ class TestVideoExtractionWithReference:
     @pytest.mark.slow
     def test_video_metadata_consistency(self):
         """Test that video metadata extraction is consistent."""
-        test_file = Path("tests/data/video/elon_ai_danger.mp4")
-        reference_file = Path("tests/data/video/elon_ai_danger_extracted.json")
+        test_file = Path("tests/data/video/elon_musk_ai_danger.mp4")
+        reference_file = Path("tests/data/video/elon_musk_ai_danger_extracted.json")
         
         if not test_file.exists():
             pytest.skip(f"Test file not found: {test_file}")
