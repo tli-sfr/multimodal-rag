@@ -25,8 +25,23 @@ st.set_page_config(
     }
 )
 
+# Hide the Deploy button and Main Menu
+st.markdown(
+    """
+    <style>
+    .stAppDeployButton {
+        display: none;
+    }
+    .stMainMenu {
+        display: none;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Import pipeline (with caching)
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def get_pipeline():
     """Get or create pipeline instance."""
     try:
@@ -58,7 +73,8 @@ def main():
         st.header("📊 System Status")
 
         try:
-            pipeline = get_pipeline()
+            with st.spinner("Initializing..."):
+                pipeline = get_pipeline()
             st.success("✅ Initialized")
         except Exception as e:
             error_msg = str(e)
@@ -106,7 +122,7 @@ def main():
             st.rerun()
     
     # Main content area with tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["📤 Upload", "🔍 Query", "📊 Browse Data", "📈 Evaluation"])
+    tab1, tab2, tab3 = st.tabs(["📤 Upload", "🔍 Query", "📊 Browse Data"])
     
     # Tab 1: File Upload
     with tab1:
@@ -198,22 +214,48 @@ def main():
                         upload_source = source.metadata.get('upload_source', None)
                         original_filename = source.metadata.get('original_filename', None)
                         speaker_name = source.metadata.get('speaker_name', None)
+                        tags = source.metadata.get('tags', [])
+                        source_field = source.metadata.get('source', None)
+                        modality = source.modality.value
 
-                        # Create icon based on upload source
+                        # Determine status label based on upload source
                         if upload_source == 'ui':
-                            source_icon = "🌐"
+                            status_label = "Uploaded"
                         elif upload_source == 'script':
-                            source_icon = "📜"
+                            status_label = "Pre-loaded"
                         else:
-                            source_icon = "❓"
+                            # If no upload_source, try to use original_filename or source
+                            if original_filename:
+                                status_label = original_filename
+                            elif source_field:
+                                # Check if source looks like a file path
+                                if '/' in str(source_field) or '\\' in str(source_field):
+                                    # Extract just the filename from the full path
+                                    status_label = Path(str(source_field)).name
+                                else:
+                                    # Use source as-is (e.g., "mock_data_andrew_ng_pdf")
+                                    status_label = str(source_field)
+                            else:
+                                status_label = "Unknown"
 
-                        # Build title
-                        title_parts = [f"{source_icon} Source {i}"]
+                        # Build title with metadata (no icon)
+                        title_parts = [f"Source {i}"]
                         if speaker_name:
                             title_parts.append(f"👤 {speaker_name}")
-                        title_parts.append(f"{source.modality.value}")
                         if original_filename:
-                            title_parts.append(f"({original_filename})")
+                            title_parts.append(f"📄 {original_filename}")
+                        else:
+                            title_parts.append(f"📄 {modality}")
+                        title_parts.append(f"[{status_label}]")
+
+                        # Check if this is mock data
+                        is_mock_data = (isinstance(tags, list) and 'mock_data' in tags) or (isinstance(tags, str) and tags == 'mock_data')
+
+                        # Add mock data tag if present
+                        if is_mock_data:
+                            title_parts.append("(mock data)")
+
+                        # Add score
                         title_parts.append(f"Score: {source.score:.3f}")
 
                         title = " - ".join(title_parts)
@@ -306,10 +348,11 @@ def main():
                             title_parts.append(f"📄 {modality}")
                         title_parts.append(f"[{status_label}]")
 
+                        # Check if this is mock data
+                        is_mock_data = (isinstance(tags, list) and 'mock_data' in tags) or (isinstance(tags, str) and tags == 'mock_data')
+
                         # Add mock data tag if present (tags is a list)
-                        if isinstance(tags, list) and 'mock_data' in tags:
-                            title_parts.append("(mock data)")
-                        elif isinstance(tags, str) and tags == 'mock_data':
+                        if is_mock_data:
                             title_parts.append("(mock data)")
 
                         title = " - ".join(title_parts)
@@ -379,20 +422,7 @@ def main():
         except Exception as e:
             st.error(f"Error loading data: {e}")
 
-    # Tab 4: Evaluation
-    with tab4:
-        st.header("Evaluation Metrics")
-        
-        st.info("Evaluation framework is configured. Run test suite to see results.")
-        
-        if st.button("Run Evaluation Suite"):
-            st.warning("Evaluation suite not yet implemented in UI")
-            st.markdown("""
-            To run evaluations, use:
-            ```bash
-            python -m pytest tests/ -v
-            ```
-            """)
+     
     
     # Footer
     st.markdown("---")
@@ -400,7 +430,7 @@ def main():
         """
         <div style='text-align: center'>
             <p>Multimodal Enterprise RAG System v1.0.0</p>
-            <p>Built with evaluation-first design principles</p>
+             
         </div>
         """,
         unsafe_allow_html=True

@@ -258,8 +258,14 @@ class MultimodalRAGPipeline:
 
         # Generate answer using LLM
         prompt = ChatPromptTemplate.from_template(
-            """Answer the question based on the following context.
-            Be concise and cite sources using [1], [2], etc.
+            """You are a helpful assistant that answers questions based ONLY on the provided context.
+
+            IMPORTANT RULES:
+            1. ONLY use information from the context below - do NOT use external knowledge
+            2. If the context does not contain enough information to answer the question, say "I don't have enough information in the provided sources to answer this question."
+            3. Always cite sources using [1], [2], etc. when using information
+            4. Be concise and accurate
+            5. If the context mentions the topic but doesn't answer the specific question, acknowledge what information IS available
 
             Context:
             {context}
@@ -271,7 +277,7 @@ class MultimodalRAGPipeline:
 
         llm = ChatOpenAI(
             model=self.settings.openai_model,
-            temperature=0.2,
+            temperature=0.0,  # Set to 0 for maximum determinism and minimal hallucination
             api_key=self.settings.openai_api_key
         )
 
