@@ -18,7 +18,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.pipeline import MultimodalRAGPipeline
-from src.models.query import Query
+from src.models import Query
 from src.config import settings
 
 
