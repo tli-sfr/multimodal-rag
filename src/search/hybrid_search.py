@@ -194,7 +194,10 @@ class HybridSearchEngine:
                 logger.debug("No potential entities found in query")
                 return [], False  # No entities extracted
 
-            logger.debug(f"Searching for entities: {potential_entities}")
+            logger.info("=" * 70)
+            logger.info(f"EXTRACTED ENTITIES FROM QUERY: '{query.text}'")
+            logger.info(f"  Potential entities: {potential_entities}")
+            logger.info("=" * 70)
 
             # Step 2: Find matching entities in graph
             matched_entities = self.graph_client.find_entities_by_name(
@@ -208,6 +211,15 @@ class HybridSearchEngine:
                 return [], True  # Entities were extracted but not found
 
             logger.info(f"Found {len(matched_entities)} matching entities in graph")
+
+            # Print matched entities for debugging
+            logger.info("=" * 70)
+            logger.info("MATCHED ENTITIES:")
+            for i, entity in enumerate(matched_entities, 1):
+                logger.info(f"  {i}. Name: '{entity['name']}' | Type: {entity['type']} | ID: {entity['id']}")
+                if entity.get('description'):
+                    logger.info(f"     Description: {entity['description']}")
+            logger.info("=" * 70)
 
             # Step 3: Get entity IDs and traverse relationships
             entity_ids = [e['id'] for e in matched_entities]
@@ -223,6 +235,16 @@ class HybridSearchEngine:
                 return [], True  # Entities found but no related chunks
 
             logger.info(f"Found {len(related_chunks)} related chunks through graph")
+
+            # Print related chunks for debugging
+            logger.info("=" * 70)
+            logger.info("RELATED CHUNKS FROM GRAPH TRAVERSAL:")
+            for i, chunk in enumerate(related_chunks[:10], 1):  # Show first 10
+                logger.info(f"  {i}. Entity: '{chunk['entity_name']}' ({chunk['entity_type']}) | Relevance: {chunk['relevance']:.2f}")
+                logger.info(f"     Chunk ID: {chunk['chunk_id']}")
+            if len(related_chunks) > 10:
+                logger.info(f"  ... and {len(related_chunks) - 10} more chunks")
+            logger.info("=" * 70)
 
             # Step 4: Retrieve chunks from Qdrant
             chunk_ids = [c['chunk_id'] for c in related_chunks]
