@@ -1,7 +1,7 @@
 """Main RAG pipeline orchestrating all components."""
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 
 from loguru import logger
@@ -55,20 +55,24 @@ class MultimodalRAGPipeline:
     
     def ingest_documents(
         self,
-        input_path: Path,
+        input_path: Union[str, Path],
         recursive: bool = True,
         **kwargs
     ) -> List[Document]:
         """Ingest documents from path.
 
         Args:
-            input_path: Path to file or directory
+            input_path: Path to file or directory (can be string or Path object)
             recursive: Process directories recursively
             **kwargs: Additional parameters to pass to ingesters (original_filename, upload_source)
 
         Returns:
             List of ingested documents
         """
+        # Convert string to Path if needed
+        if isinstance(input_path, str):
+            input_path = Path(input_path)
+
         logger.info(f"Starting ingestion from: {input_path}")
 
         # Ingest files
