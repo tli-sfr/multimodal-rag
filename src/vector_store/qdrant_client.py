@@ -43,7 +43,26 @@ class QdrantVectorStore:
         self.client = QdrantClient(host=self.host, port=self.port)
         
         logger.info(f"Connected to Qdrant at {self.host}:{self.port}")
-    
+
+    def _get_vector_config(
+        self,
+        vector_size: int = 3072,
+        distance: Distance = Distance.COSINE
+    ) -> VectorParams:
+        """Get vector configuration for collection.
+
+        Args:
+            vector_size: Size of embedding vectors
+            distance: Distance metric
+
+        Returns:
+            VectorParams configuration
+        """
+        return VectorParams(
+            size=vector_size,
+            distance=distance
+        )
+
     def create_collection(
         self,
         vector_size: int = 3072,
@@ -63,10 +82,7 @@ class QdrantVectorStore:
             if not exists:
                 self.client.create_collection(
                     collection_name=self.collection_name,
-                    vectors_config=VectorParams(
-                        size=vector_size,
-                        distance=distance
-                    )
+                    vectors_config=self._get_vector_config(vector_size, distance)
                 )
                 logger.info(f"Created collection: {self.collection_name}")
             else:
