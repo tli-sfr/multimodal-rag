@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
     qdrant_api_key: str = ""
+    qdrant_collection_name: str = "multimodal_chunks"
     
     # Redis Configuration
     redis_host: str = "localhost"
