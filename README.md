@@ -9,43 +9,51 @@ This system follows an **evaluation-first, modular design** with the following k
 ### Core Components
 
 1. **Evaluation Framework** (`src/evaluation/`)
+
    - DeepEval-based test suites
    - Metrics: hallucination rate, latency, accuracy, retrieval quality
    - Query type classification (factual, lookup, reasoning)
 
 2. **Ingestion Pipeline** (`src/ingestion/`)
+
    - Text: PDF, TXT parsing with chunking
    - Image: OCR, captioning, visual embeddings
    - Audio: Transcription with Whisper
    - Video: Frame extraction, scene detection, audio transcription
 
 3. **Entity & Relationship Extraction** (`src/extraction/`)
+
    - LLM-based entity recognition
    - Cross-modal entity linking
    - Relationship extraction and schema inference
 
 4. **Knowledge Graph** (`src/graph/`)
+
    - Neo4j integration
    - Graph construction and traversal
    - Entity resolution and merging
 
 5. **Vector Database** (`src/vector_store/`)
+
    - Qdrant integration
    - Multimodal embeddings
    - Semantic search
 
 6. **Hybrid Search** (`src/search/`)
+
    - Graph traversal for structured queries
    - Keyword filtering with BM25
    - Vector similarity search
    - Result fusion and reranking
 
 7. **Query Processing** (`src/query/`)
+
    - Query triage and classification
    - Query rewriting and expansion
    - Agent-based orchestration
 
 8. **Answer Generation** (`src/generation/`)
+
    - RAG with context assembly
    - Post-processing and validation
    - Hallucination detection
@@ -63,11 +71,33 @@ This system follows an **evaluation-first, modular design** with the following k
 - Docker (for Neo4j and Qdrant)
 - OpenAI API key (or local LLM)
 
-### Installation
+### Automated Installation (Recommended)
+
+We provide automated setup scripts that detect and fix environment compatibility issues:
+
+```bash
+# Option 1: Bash script (Mac/Linux)
+bash scripts/setup_auto.sh
+
+# Option 2: Python script (Cross-platform: Mac/Linux/Windows)
+python3 scripts/setup_auto.py
+```
+
+**What gets fixed automatically:**
+
+- ✅ Conda/Anaconda environment conflicts
+- ✅ Corrupted virtual environments
+- ✅ venv creation failures
+- ✅ Dependency installation issues
+- ✅ Docker container conflicts
+
+**See [SETUP.md](SETUP.md) for detailed setup instructions and troubleshooting.**
+
+### Manual Installation
 
 ```bash
 # Clone and setup
-cd multimodal
+cd multimodal-rag
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
@@ -160,4 +190,3 @@ pytest tests/test_ingestion.py -v
 ## 📄 License
 
 MIT License
-
